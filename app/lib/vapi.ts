@@ -1,6 +1,4 @@
 // VAPI API helpers (placeholder)
-import type { FriendData } from '../../types';
-
-export async function triggerCall(_friendData: FriendData) {
+export async function triggerCall() {
   // Implement VAPI call trigger logic here
 }
