@@ -1,12 +1,16 @@
+"use client";
 import React, { useState } from 'react';
-import { FriendData } from '../../types';
+import { FriendData } from '../../types/index';
 
 interface FriendFormProps {
   onSubmit: (data: FriendData) => void;
+  initialData?: FriendData;
 }
 
-export default function FriendForm({ onSubmit }: FriendFormProps) {
-  const [form, setForm] = useState<FriendData>({ name: '', phone: '', lastMemory: '', introduction: '', preferredTime: '' });
+export default function FriendForm({ onSubmit, initialData }: FriendFormProps) {
+  const [form, setForm] = useState<FriendData>(
+    initialData || { name: '', phone: '', lastMemory: '', introduction: '', preferredTime: '' }
+  );
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     setForm({ ...form, [e.target.name]: e.target.value });
