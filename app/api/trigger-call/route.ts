@@ -1,5 +1,5 @@
 // POST /api/trigger-call
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 export async function POST() {
   // Placeholder for call trigger logic
