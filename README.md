@@ -1,4 +1,12 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Touchbase.fun
+
+Touchbase.fun is an AI-powered voice agent app that helps you reconnect with friends. Clone your voice, let AI make the call, and rekindle connections in a friendly, human way.
+
+- Built with Next.js 14+, TypeScript, Tailwind CSS, and App Router
+- Voice cloning (ElevenLabs), voice call automation (VAPI)
+- Session storage with Vercel KV
+- Mobile-first, production-ready, and deployable to Vercel
+
 
 ## Getting Started
 
