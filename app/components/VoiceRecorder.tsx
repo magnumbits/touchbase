@@ -17,7 +17,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, maxD
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
   const streamRef = useRef<MediaStream | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -76,7 +76,8 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, maxD
       mediaRecorder.start();
       setIsRecording(true);
       setTimeLeft(maxDuration);
-    } catch (err: any) {
+    } catch {
+
       setError('Microphone access denied or unavailable.');
       setPermission('denied');
     }

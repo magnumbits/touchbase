@@ -1,13 +1,13 @@
 "use client";
 import React, { useState } from "react";
-import dynamic from "next/dynamic";
+
 import ProgressSteps from "./components/ProgressSteps";
 import VoiceRecorderWrapper from "./components/VoiceRecorderWrapper";
 import FriendForm from "./components/FriendForm";
 import CallStatus from "./components/CallStatus";
 import type { FriendData } from "../types";
 
-const STEPS = ["Record Voice", "Friend Details", "Trigger Call", "Results & Next Steps"];
+
 
 export default function Home() {
   const [step, setStep] = useState(0);
