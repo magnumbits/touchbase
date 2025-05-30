@@ -24,3 +24,16 @@ export interface CallResponse {
   call_id: string;
   status: string;
 }
+
+export interface VoiceCloneRequest {
+  audioFile: File;
+  sessionId?: string;
+}
+
+export interface VoiceCloneResponse {
+  success: boolean;
+  voiceId?: string;
+  sessionId?: string;
+  error?: string;
+  details?: string;
+}
