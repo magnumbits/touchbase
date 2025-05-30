@@ -5,7 +5,7 @@ interface ProgressStepsProps {
   step: number;
 }
 
-const steps = ['Record Voice', 'Friend Details', 'Trigger Call', 'Results & Calendar'];
+const steps = ['Clone your voice', 'Friend Details', 'Call Status'];
 
 export default function ProgressSteps({ step }: ProgressStepsProps) {
   return (

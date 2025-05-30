@@ -6,6 +6,7 @@ export interface VoiceRecorderProps {
   onRecordingComplete?: (audioBlob: Blob) => void;
   maxDuration?: number; // seconds, default 30
   onAssistantVoiceUpdated?: () => void;
+  setStep: (step: number) => void;
 }
 
 interface RecordingState {
@@ -34,7 +35,7 @@ const READING_TIPS = [
   "Avoid long pauses between sentences."
 ];
 
-const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, maxDuration = 30, onAssistantVoiceUpdated }) => {
+const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, maxDuration = 30, onAssistantVoiceUpdated, setStep }) => {
 
   const router = useRouter();
   
@@ -163,25 +164,24 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, maxD
   };
 
   return (
-    <div className="flex flex-col items-center w-full max-w-xs mx-auto p-4 rounded shadow bg-white">
+    <div className="w-full flex flex-col items-center gap-6 px-2 md:px-4">
       {/* Script and Reading Tips Section */}
-      {!(state.audioBlob && audioUrl && !state.isRecording) && (
-        <div className="w-full mb-4">
-          <div className="bg-gray-50 border border-gray-200 rounded p-3 mb-2 shadow-sm">
-            <div className="font-semibold mb-1 text-gray-700">Read this aloud:</div>
-            <blockquote className="italic text-gray-800 whitespace-pre-line">{FRIEND_SCRIPT}</blockquote>
-          </div>
-          <div className="bg-blue-50 border border-blue-200 rounded p-3 shadow-sm">
-            <div className="font-semibold mb-1 text-blue-700">Tips for best results:</div>
-            <ul className="list-disc list-inside text-blue-900 text-sm">
-              {READING_TIPS.map((tip, idx) => (
-                <li key={idx}>{tip}</li>
-              ))}
-            </ul>
-          </div>
+      <div className="w-full max-w-2xl flex flex-col gap-4">
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 shadow-sm">
+          <div className="font-semibold mb-1 text-gray-700">Read this aloud:</div>
+          <blockquote className="italic text-gray-800 whitespace-pre-line">{FRIEND_SCRIPT}</blockquote>
         </div>
-      )}
-      <div className="mb-4 flex flex-col items-center">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-5 shadow-sm">
+          <div className="font-semibold mb-1 text-blue-700">Tips for best results:</div>
+          <ul className="list-disc list-inside text-blue-900 text-sm">
+            {READING_TIPS.map((tip, idx) => (
+              <li key={idx}>{tip}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      {/* Centered recording controls below text */}
+      <div className="flex flex-col items-center mt-6 w-full">
         <button
           onClick={state.isRecording ? stopRecording : startRecording}
           className={`w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 text-white text-2xl ${state.isRecording ? 'bg-red-600 animate-pulse' : 'bg-orange-500 hover:bg-orange-600'}`}
@@ -195,6 +195,26 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, maxD
         </div>
         {state.isRecording && (
           <div className="mt-1 text-xs text-red-500 animate-pulse">Recording...</div>
+        )}
+        {/* Main CTA: Record your voice */}
+        {!state.isRecording && !state.audioBlob && (
+          <button
+            onClick={startRecording}
+            className="mt-6 px-8 py-3 rounded-lg bg-orange-500 text-white font-semibold shadow hover:bg-orange-600 transition text-lg"
+            type="button"
+          >
+            Record your voice
+          </button>
+        )}
+        {/* Subtle link: Skip and use default voice */}
+        {!state.isRecording && !state.audioBlob && (
+          <button
+            onClick={() => setStep(1)}
+            className="mt-2 text-orange-500 underline bg-transparent border-0 shadow-none text-base cursor-pointer"
+            type="button"
+          >
+            Skip and use default voice
+          </button>
         )}
       </div>
 

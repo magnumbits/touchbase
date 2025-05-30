@@ -8,7 +8,6 @@ interface CallFormData {
   phone: string;
   introduction: string;
   lastMemory: string;
-
 }
 
 interface FriendFormProps {
@@ -24,7 +23,6 @@ export default function FriendForm({ initialData = {}, onBack, onCallInitiated }
     phone: initialData.phone || '',
     lastMemory: initialData.lastMemory || '',
     introduction: initialData.introduction || '',
-
   });
   const [touched, setTouched] = useState<{ [K in keyof CallFormData]?: boolean }>({});
   const [errors, setErrors] = useState<{ [K in keyof CallFormData]?: string }>({});
@@ -93,7 +91,6 @@ export default function FriendForm({ initialData = {}, onBack, onCallInitiated }
             phone: autoFormatPhone(form.phone),
             introduction: form.introduction,
             lastMemory: form.lastMemory,
-
           }),
         });
         if (!res.ok) throw new Error(await res.text());
@@ -122,92 +119,100 @@ export default function FriendForm({ initialData = {}, onBack, onCallInitiated }
   }
 
   return (
-    <form ref={formRef} className="flex flex-col gap-4 w-full max-w-md mx-auto bg-white p-6 rounded shadow-md" onSubmit={handleSubmit} aria-disabled={loading}>
-      <div>
-        <label className="block text-sm font-semibold mb-1 text-gray-700">Your Name<span className="text-red-500">*</span></label>
-        <input
-          name="userName"
-          value={form.userName}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          required
-          minLength={2}
-          maxLength={50}
-          disabled={loading}
-          className={`w-full px-4 py-2 rounded border text-gray-900 placeholder-gray-500 ${errors.userName ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-orange-400`}
-          placeholder="How should you introduce yourself?"
-          aria-required="true"
-        />
-        {errors.userName && touched.userName && <div className="text-red-500 text-xs mt-1">{errors.userName}</div>}
-      </div>
-      <div>
-        <label className="block text-sm font-semibold mb-1 text-gray-700">Friend's Name<span className="text-red-500">*</span></label>
-        <input
-          name="friendName"
-          value={form.friendName}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          required
-          maxLength={50}
-          disabled={loading}
-          className={`w-full px-4 py-2 rounded border text-gray-900 placeholder-gray-500 ${errors.friendName ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-orange-400`}
-          placeholder="Enter your friend's name"
-          aria-required="true"
-        />
-        {errors.friendName && touched.friendName && <div className="text-red-500 text-xs mt-1">{errors.friendName}</div>}
-      </div>
-      <div>
-        <label className="block text-sm font-semibold mb-1 text-gray-700">Phone Number<span className="text-red-500">*</span></label>
-        <input
-          name="phone"
-          value={form.phone}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          required
-          maxLength={16}
-          disabled={loading}
-          className={`w-full px-4 py-2 rounded border text-gray-900 placeholder-gray-500 ${errors.phone ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-orange-400`}
-          placeholder="+1 (555) 123-4567"
-          aria-required="true"
-        />
-        <div className="text-xs text-gray-500 mt-1">Format: +1234567890</div>
-        {errors.phone && touched.phone && <div className="text-red-500 text-xs mt-1">{errors.phone}</div>}
-      </div>
-      <div>
-        <label className="block text-sm font-semibold mb-1 text-gray-700">Last Memory/Context<span className="text-red-500">*</span></label>
-        <textarea
-          name="lastMemory"
-          value={form.lastMemory}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          required
-          rows={3}
-          maxLength={300}
-          disabled={loading}
-          className={`w-full px-4 py-2 rounded border text-gray-900 placeholder-gray-500 ${errors.lastMemory ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-orange-400`}
-          placeholder="What do you remember about your last conversation or interaction?"
-          aria-required="true"
-        />
-        <div className="text-xs text-gray-500 mt-1">Max 300 characters</div>
-        {errors.lastMemory && touched.lastMemory && <div className="text-red-500 text-xs mt-1">{errors.lastMemory}</div>}
-      </div>
-      <div>
-        <label className="block text-sm font-semibold mb-1 text-gray-700">How do you know them?<span className="text-red-500">*</span></label>
-        <input
-          name="introduction"
-          value={form.introduction}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          required
-          maxLength={100}
-          disabled={loading}
-          className={`w-full px-4 py-2 rounded border text-gray-900 placeholder-gray-500 ${errors.introduction ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-orange-400`}
-          placeholder="e.g. We met at college, We worked together at Acme Corp, We're neighbors, etc."
-          aria-required="true"
-        />
-        <div className="text-xs text-gray-500 mt-1">Max 100 characters</div>
-        {errors.introduction && touched.introduction && <div className="text-red-500 text-xs mt-1">{errors.introduction}</div>}
-      </div>
+    <div className="flex justify-center items-center min-h-[80vh] w-full bg-gradient-to-br from-orange-50 to-white">
+      <form
+        ref={formRef}
+        onSubmit={handleSubmit}
+        className="w-full max-w-2xl bg-white/95 rounded-3xl shadow-2xl p-10 sm:p-14 flex flex-col gap-8 border border-gray-200"
+        aria-disabled={loading}
+      >
+        <div>
+          <label className="block text-sm font-semibold mb-1 text-gray-700">Your Name<span className="text-red-500">*</span></label>
+          <input
+            name="userName"
+            value={form.userName}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            required
+            minLength={2}
+            maxLength={50}
+            disabled={loading}
+            className={`w-full px-4 py-2 rounded border text-gray-900 placeholder-gray-500 ${errors.userName ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-orange-400`}
+            placeholder="How should you introduce yourself?"
+            aria-required="true"
+          />
+          {errors.userName && touched.userName && <div className="text-red-500 text-xs mt-1">{errors.userName}</div>}
+        </div>
+        <div>
+          <label className="block text-sm font-semibold mb-1 text-gray-700">Friend's Name<span className="text-red-500">*</span></label>
+          <input
+            name="friendName"
+            value={form.friendName}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            required
+            maxLength={50}
+            disabled={loading}
+            className={`w-full px-4 py-2 rounded border text-gray-900 placeholder-gray-500 ${errors.friendName ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-orange-400`}
+            placeholder="Enter your friend's name"
+            aria-required="true"
+          />
+          {errors.friendName && touched.friendName && <div className="text-red-500 text-xs mt-1">{errors.friendName}</div>}
+        </div>
+        <div>
+          <label className="block text-sm font-semibold mb-1 text-gray-700">Phone Number<span className="text-red-500">*</span></label>
+          <input
+            name="phone"
+            value={form.phone}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            required
+            maxLength={16}
+            disabled={loading}
+            className={`w-full px-4 py-2 rounded border text-gray-900 placeholder-gray-500 ${errors.phone ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-orange-400`}
+            placeholder="+1 (555) 123-4567"
+            aria-required="true"
+          />
+          <div className="text-xs text-gray-500 mt-1">Format: +1234567890</div>
+          {errors.phone && touched.phone && <div className="text-red-500 text-xs mt-1">{errors.phone}</div>}
+        </div>
+        <div>
+          <label className="block text-sm font-semibold mb-1 text-gray-700">Last Memory/Context<span className="text-red-500">*</span></label>
+          <textarea
+            name="lastMemory"
+            value={form.lastMemory}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            required
+            rows={3}
+            maxLength={300}
+            disabled={loading}
+            className={`w-full px-4 py-2 rounded border text-gray-900 placeholder-gray-500 ${errors.lastMemory ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-orange-400`}
+            placeholder="What do you remember about your last conversation or interaction?"
+            aria-required="true"
+          />
+          <div className="text-xs text-gray-500 mt-1">Max 300 characters</div>
+          {errors.lastMemory && touched.lastMemory && <div className="text-red-500 text-xs mt-1">{errors.lastMemory}</div>}
+        </div>
+        <div>
+          <label className="block text-sm font-semibold mb-1 text-gray-700">How do you know them?<span className="text-red-500">*</span></label>
+          <input
+            name="introduction"
+            value={form.introduction}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            required
+            maxLength={100}
+            disabled={loading}
+            className={`w-full px-4 py-2 rounded border text-gray-900 placeholder-gray-500 ${errors.introduction ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-orange-400`}
+            placeholder="e.g. We met at college, We worked together at Acme Corp, We're neighbors, etc."
+            aria-required="true"
+          />
+          <div className="text-xs text-gray-500 mt-1">Max 100 characters</div>
+          {errors.introduction && touched.introduction && <div className="text-red-500 text-xs mt-1">{errors.introduction}</div>}
+        </div>
+
+
 
       <div className="flex flex-row gap-2 mt-4">
         {onBack && (
@@ -242,5 +247,6 @@ export default function FriendForm({ initialData = {}, onBack, onCallInitiated }
         </div>
       )}
     </form>
+    </div>
   );
 }

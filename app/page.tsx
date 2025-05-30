@@ -30,26 +30,22 @@ export default function Home() {
       case 0:
         return (
           <div className="w-full flex flex-col items-center gap-6 animate-fade-in">
-            <h2 className="text-2xl font-bold text-orange-700">Step 1: Record a Voice Message</h2>
+            <h2 className="text-2xl font-bold text-orange-700">Step 1: Clone your voice</h2>
             <VoiceRecorderWrapper
               onRecordingComplete={(blob: Blob) => {
                 setAudioBlob(blob);
                 setStep(1);
               }}
               onAssistantVoiceUpdated={() => setStep(1)}
+              setStep={setStep}
             />
-            <button
-              className="mt-6 px-6 py-2 rounded bg-orange-500 text-white font-semibold shadow hover:bg-orange-600 transition"
-              onClick={() => setStep(1)}
-            >
-              Skip and use default voice
-            </button>
+            
           </div>
         );
       case 1:
         return (
-          <div className="w-full max-w-md animate-fade-in">
-            <h2 className="text-2xl font-bold text-orange-700 mb-4">Step 2: Friend Details</h2>
+          <div className="w-full max-w-2xl mx-auto flex flex-col items-center animate-fade-in">
+            <h2 className="text-2xl font-bold text-orange-700 mb-4 text-center">Step 2: Friend Details</h2>
             <FriendForm
               initialData={friendData || undefined}
               onBack={() => setStep(0)}
@@ -70,17 +66,19 @@ export default function Home() {
         );
       case 2:
         return (
-          <div className="w-full flex flex-col items-center gap-6 animate-fade-in">
-            <h2 className="text-2xl font-bold text-orange-700">Step 3: Call Status</h2>
-            <div className="w-full max-w-md">
-              <CallStatus
-                callId={callId || undefined}
-                friendName={friendData?.name || "your friend"}
-                onCallCompleted={handleCallCompleted}
-              />
+          <div className="w-full max-w-2xl mx-auto flex flex-col items-center gap-8 animate-fade-in">
+            <h2 className="text-2xl font-bold text-orange-700 text-center">Step 3: Call Status</h2>
+            <div className="w-full flex justify-center">
+              <div className="w-full max-w-md">
+                <CallStatus
+                  callId={callId || undefined}
+                  friendName={friendData?.name || "your friend"}
+                  onCallCompleted={handleCallCompleted}
+                />
+              </div>
             </div>
             <button
-              className="mt-2 text-orange-500 underline"
+              className="mt-2 text-orange-500 underline text-center"
               onClick={() => setStep(1)}
             >
               Back to Friend Details
@@ -128,7 +126,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-100 via-yellow-50 to-orange-200 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-2xl bg-white/90 rounded-2xl shadow-xl p-6 sm:p-10 flex flex-col gap-4 animate-fade-in">
+      <div className="w-full max-w-5xl bg-white/90 rounded-2xl shadow-xl p-6 sm:p-10 flex flex-col gap-4 animate-fade-in">
         <ProgressSteps step={step} />
         {renderStep()}
       </div>
