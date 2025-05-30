@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 
 interface CallStatusResponse {
   success: boolean;
-  callData?: any; // Full Vapi call data
+  callData?: unknown; // Full Vapi call data
   status?: string;
   summary?: string;
   recordingUrl?: string;
@@ -67,12 +67,12 @@ export async function GET(req: NextRequest) {
     };
 
     return NextResponse.json(result, { status: 200 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error fetching call status:', err);
     return NextResponse.json({ 
       success: false, 
       error: 'Failed to fetch call status', 
-      details: err.message 
+      details: (err && typeof err === 'object' && 'message' in err) ? (err as { message?: string }).message : String(err)
     }, { status: 500 });
   }
 }
