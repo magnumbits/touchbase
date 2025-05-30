@@ -38,10 +38,10 @@ interface ErrorResponse {
   details?: string;
 }
 
-type ApiResponse = SuccessResponse | ErrorResponse;
+
 
 function sanitizePhone(phone: string): string {
-  let digits = phone.replace(/\D/g, '');
+  const digits = phone.replace(/\D/g, '');
   if (digits.length === 10) return `+1${digits}`;
   if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
   if (phone.startsWith('+') && /^\+\d{10,15}$/.test(phone)) return phone;
@@ -49,7 +49,7 @@ function sanitizePhone(phone: string): string {
   throw new Error('Invalid phone number format. Must be E.164.');
 }
 
-function log(...args: any[]) {
+function log(...args: unknown[]) {
   // eslint-disable-next-line no-console
   console.log('[API/trigger-call]', ...args);
 }
@@ -83,9 +83,9 @@ export async function POST(req: NextRequest) {
   let formattedPhone = '';
   try {
     formattedPhone = sanitizePhone(body.phone);
-  } catch (err: any) {
+  } catch (err: unknown) {
     log('Phone format error', body.phone, err);
-    return NextResponse.json({ success: false, error: 'Invalid phone number', details: err.message }, { status: 400 });
+    return NextResponse.json({ success: false, error: 'Invalid phone number', details: (err && typeof err === 'object' && 'message' in err) ? (err as { message?: string }).message : String(err) }, { status: 400 });
   }
 
   // Build VAPI payload
@@ -135,13 +135,13 @@ export async function POST(req: NextRequest) {
       callId: vapiData.callId || vapiData.id || '',
       message: 'Call initiated successfully',
     }, { status: 200 });
-  } catch (err: any) {
-    if (err.name === 'AbortError') {
+  } catch (err: unknown) {
+    if (err && typeof err === 'object' && 'name' in err && (err as { name?: string }).name === 'AbortError') {
       log('VAPI request timed out');
-      return NextResponse.json({ success: false, error: 'VAPI request timed out', details: err.message }, { status: 504 });
+      return NextResponse.json({ success: false, error: 'VAPI request timed out', details: (err as { message?: string }).message }, { status: 504 });
     }
     log('VAPI request error', err);
-    return NextResponse.json({ success: false, error: 'Failed to initiate call', details: err.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to initiate call', details: (err && typeof err === 'object' && 'message' in err) ? (err as { message?: string }).message : String(err) }, { status: 500 });
   }
 }
 
