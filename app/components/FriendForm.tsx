@@ -14,9 +14,10 @@ interface CallFormData {
 interface FriendFormProps {
   initialData?: Partial<CallFormData>;
   onBack?: () => void;
+  onCallInitiated?: (callId: string, formData: CallFormData) => void;
 }
 
-export default function FriendForm({ initialData = {}, onBack }: FriendFormProps) {
+export default function FriendForm({ initialData = {}, onBack, onCallInitiated }: FriendFormProps) {
   const [form, setForm] = useState<CallFormData>({
     userName: initialData.userName || '',
     friendName: initialData.friendName || '',
@@ -96,8 +97,14 @@ export default function FriendForm({ initialData = {}, onBack }: FriendFormProps
           }),
         });
         if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
         setStatus('success');
         setStatusMsg('Call initiated! Your friend should receive a call shortly.');
+        
+        // Pass the callId back to parent component
+        if (data.success && data.callId && typeof onCallInitiated === 'function') {
+          onCallInitiated(data.callId, form);
+        }
       } catch (err: any) {
         setStatus('error');
         setStatusMsg(err?.message || 'Something went wrong. Please try again.');

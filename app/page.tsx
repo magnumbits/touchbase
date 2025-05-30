@@ -13,25 +13,15 @@ export default function Home() {
   const [step, setStep] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [friendData, setFriendData] = useState<FriendData | null>(null);
-  const [callStatus, setCallStatus] = useState<"preparing" | "calling" | "inprogress" | "completed" | "followup">("preparing");
-  const [callOutcome, setCallOutcome] = useState<string>("");
+  const [callId, setCallId] = useState<string | null>(null);
+  const [callSummary, setCallSummary] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
-  // Simulate call sequence
-  const triggerCall = async () => {
-    setCallStatus("preparing");
-    setLoading(true);
-    setTimeout(() => {
-      setCallStatus("calling");
-      setTimeout(() => {
-        setCallStatus("inprogress");
-        setTimeout(() => {
-          setCallStatus("completed");
-          setCallOutcome("Reached voicemail, left a nice message!");
-          setLoading(false);
-        }, 3500);
-      }, 2500);
-    }, 1500);
+  // Handle call completion - update state and move to results step
+  const handleCallCompleted = (summary: string) => {
+    setCallSummary(summary);
+    // After call is complete, move to the results step
+    setStep(3);
   };
 
   // Step content rendering
@@ -61,51 +51,34 @@ export default function Home() {
           <div className="w-full max-w-md animate-fade-in">
             <h2 className="text-2xl font-bold text-orange-700 mb-4">Step 2: Friend Details</h2>
             <FriendForm
-              onSubmit={data => {
-                setFriendData(data);
-                setStep(2);
-              }}
               initialData={friendData || undefined}
+              onBack={() => setStep(0)}
+              onCallInitiated={(newCallId, formData) => {
+                // Convert CallFormData to FriendData
+                setFriendData({
+                  name: formData.friendName,
+                  userName: formData.userName,
+                  phone: formData.phone,
+                  lastMemory: formData.lastMemory,
+                  introduction: formData.introduction
+                });
+                setCallId(newCallId);
+                setStep(2); // Move to Call Status step
+              }}
             />
-            <button
-              className="mt-4 text-orange-500 underline"
-              onClick={() => setStep(0)}
-            >
-              Back to Recording
-            </button>
           </div>
         );
       case 2:
         return (
           <div className="w-full flex flex-col items-center gap-6 animate-fade-in">
-            <h2 className="text-2xl font-bold text-orange-700">Step 3: Placing the Call</h2>
-            <div className="w-full max-w-sm">
+            <h2 className="text-2xl font-bold text-orange-700">Step 3: Call Status</h2>
+            <div className="w-full max-w-md">
               <CallStatus
-                status={
-                  callStatus === "preparing"
-                    ? "pending"
-                    : callStatus === "calling"
-                    ? "calling"
-                    : callStatus === "inprogress"
-                    ? "calling"
-                    : callStatus === "completed"
-                    ? "completed"
-                    : "pending"
-                }
+                callId={callId || undefined}
                 friendName={friendData?.name || "your friend"}
-                outcome={callOutcome}
+                onCallCompleted={handleCallCompleted}
               />
             </div>
-            <button
-              className="mt-6 px-6 py-2 rounded bg-orange-500 text-white font-semibold shadow hover:bg-orange-600 transition"
-              onClick={() => {
-                triggerCall();
-                setStep(3);
-              }}
-              disabled={loading}
-            >
-              {loading ? "Calling..." : "Start Call"}
-            </button>
             <button
               className="mt-2 text-orange-500 underline"
               onClick={() => setStep(1)}
@@ -119,8 +92,14 @@ export default function Home() {
           <div className="w-full flex flex-col items-center gap-6 animate-fade-in">
             <h2 className="text-2xl font-bold text-orange-700">Step 4: Results & Next Steps</h2>
             <div className="bg-white/80 rounded-xl shadow p-6 max-w-md w-full text-center">
-              <p className="text-lg font-semibold text-green-700 mb-2">{callOutcome || "Call completed!"}</p>
-              <p className="text-gray-700">Would you like to schedule a follow-up or try another friend?</p>
+              <p className="text-lg font-semibold text-green-700 mb-2">Call completed!</p>
+              {callSummary && (
+                <div className="bg-white p-4 rounded border border-gray-200 my-4 text-left">
+                  <h3 className="font-semibold text-sm text-gray-700 mb-2">Call Summary:</h3>
+                  <p className="text-gray-800">{callSummary}</p>
+                </div>
+              )}
+              <p className="text-gray-700 mt-4">Would you like to schedule a follow-up or try another friend?</p>
               <div className="flex gap-4 mt-6 justify-center">
                 <button
                   className="px-4 py-2 rounded bg-orange-400 text-white font-semibold hover:bg-orange-500 transition"
@@ -128,8 +107,8 @@ export default function Home() {
                     setStep(0);
                     setAudioBlob(null);
                     setFriendData(null);
-                    setCallStatus("preparing");
-                    setCallOutcome("");
+                    setCallId(null);
+                    setCallSummary("");
                   }}
                 >
                   Start Over

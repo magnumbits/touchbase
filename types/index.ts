@@ -1,9 +1,18 @@
 export interface FriendData {
-  name: string;
+  name: string; // friendName in the form
+  userName: string;
   phone: string;
   lastMemory: string;
   introduction: string;
   preferredTime?: string;
+}
+
+export interface CallFormData {
+  userName: string;
+  friendName: string;
+  phone: string;
+  lastMemory: string;
+  introduction: string;
 }
 
 export interface SessionData {
