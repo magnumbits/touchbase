@@ -33,10 +33,10 @@ export async function POST(request: Request) {
     console.log('[update-assistant-voice] Successfully updated assistant voice');
     return NextResponse.json({ success: true, data: response.data });
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[update-assistant-voice] Error updating assistant voice:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: (error && typeof error === 'object' && 'message' in error) ? (error as { message?: string }).message : 'Internal server error' },
       { status: 500 }
     );
   }
