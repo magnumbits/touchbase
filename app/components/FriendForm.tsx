@@ -31,9 +31,8 @@ export default function FriendForm({ initialData = {}, onBack, onCallInitiated }
   const [statusMsg, setStatusMsg] = useState('');
   const formRef = useRef<HTMLFormElement>(null);
 
-
-  function autoFormatPhone(value: string) {
-    let v = value.replace(/[^\d+]/g, '');
+  function autoFormatPhone(value: string): string {
+    const v = value.replace(/[^\d+]/g, '');
     if (!v.startsWith('+')) {
       // Assume US if 10 digits and no country code
       if (v.length === 10) return '+1' + v;
@@ -45,7 +44,7 @@ export default function FriendForm({ initialData = {}, onBack, onCallInitiated }
     const errs: { [K in keyof CallFormData]?: string } = {};
     if (!values.userName.trim()) errs.userName = 'Your name is required.';
     else if (values.userName.length < 2 || values.userName.length > 50) errs.userName = 'Name must be 2-50 characters.';
-    if (!values.friendName.trim()) errs.friendName = "Friend's name is required.";
+    if (!values.friendName.trim()) errs.friendName = "Friend&apos;s name is required.";
     if (!values.phone.trim()) {
       errs.phone = 'Phone number is required.';
     } else if (!/^\+\d{10,15}$/.test(autoFormatPhone(values.phone.trim()))) {
@@ -102,9 +101,9 @@ export default function FriendForm({ initialData = {}, onBack, onCallInitiated }
         if (data.success && data.callId && typeof onCallInitiated === 'function') {
           onCallInitiated(data.callId, form);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         setStatus('error');
-        setStatusMsg(err?.message || 'Something went wrong. Please try again.');
+        setStatusMsg((err && typeof err === 'object' && 'message' in err) ? (err as { message?: string }).message || 'Something went wrong. Please try again.' : 'Something went wrong. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -124,7 +123,7 @@ export default function FriendForm({ initialData = {}, onBack, onCallInitiated }
         ref={formRef}
         onSubmit={handleSubmit}
         className="w-full max-w-2xl bg-white/95 rounded-3xl shadow-2xl p-10 sm:p-14 flex flex-col gap-8 border border-gray-200"
-        aria-disabled={loading}
+  
       >
         <div>
           <label className="block text-sm font-semibold mb-1 text-gray-700">Your Name<span className="text-red-500">*</span></label>
