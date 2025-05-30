@@ -185,7 +185,7 @@ export default function FriendForm({ initialData = {}, onBack }: FriendFormProps
         {errors.lastMemory && touched.lastMemory && <div className="text-red-500 text-xs mt-1">{errors.lastMemory}</div>}
       </div>
       <div>
-        <label className="block text-sm font-semibold mb-1 text-gray-700">Introduction Line<span className="text-red-500">*</span></label>
+        <label className="block text-sm font-semibold mb-1 text-gray-700">How do you know them?<span className="text-red-500">*</span></label>
         <input
           name="introduction"
           value={form.introduction}
@@ -195,7 +195,7 @@ export default function FriendForm({ initialData = {}, onBack }: FriendFormProps
           maxLength={100}
           disabled={loading}
           className={`w-full px-4 py-2 rounded border text-gray-900 placeholder-gray-500 ${errors.introduction ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-orange-400`}
-          placeholder="This is Sarah from college or This is John from Adobe"
+          placeholder="e.g. We met at college, We worked together at Acme Corp, We're neighbors, etc."
           aria-required="true"
         />
         <div className="text-xs text-gray-500 mt-1">Max 100 characters</div>

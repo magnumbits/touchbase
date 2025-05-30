@@ -46,13 +46,13 @@ export default function Home() {
                 setAudioBlob(blob);
                 setStep(1);
               }}
+              onAssistantVoiceUpdated={() => setStep(1)}
             />
             <button
               className="mt-6 px-6 py-2 rounded bg-orange-500 text-white font-semibold shadow hover:bg-orange-600 transition"
-              disabled={!audioBlob}
               onClick={() => setStep(1)}
             >
-              Next: Friend Details
+              Skip and use default voice
             </button>
           </div>
         );

@@ -10,8 +10,9 @@ const VoiceRecorder = dynamic(
 
 interface VoiceRecorderWrapperProps {
   onRecordingComplete: (blob: Blob) => void;
+  onAssistantVoiceUpdated?: () => void;
 }
 
-export default function VoiceRecorderWrapper({ onRecordingComplete }: VoiceRecorderWrapperProps) {
-  return <VoiceRecorder onRecordingComplete={onRecordingComplete} />;
+export default function VoiceRecorderWrapper({ onRecordingComplete, onAssistantVoiceUpdated }: VoiceRecorderWrapperProps) {
+  return <VoiceRecorder onRecordingComplete={onRecordingComplete} onAssistantVoiceUpdated={onAssistantVoiceUpdated} />;
 }

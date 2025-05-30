@@ -258,6 +258,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return;
     }
 
+    // Update VAPI assistant with the new voice ID
+    const VAPI_ASSISTANT_ID = 'faf48696-c2f6-4ef8-b140-d9d96cc12719';
+    try {
+      const { updateAssistantVoice } = await import('@/app/lib/vapi');
+      const vapiResponse = await updateAssistantVoice(VAPI_ASSISTANT_ID, clonedVoice.id);
+      
+      if (!vapiResponse.success) {
+        console.error('[clone-voice] Failed to update VAPI assistant:', vapiResponse.error);
+        logs.vapiError = vapiResponse.error;
+      } else {
+        console.log('[clone-voice] Successfully updated VAPI assistant');
+        logs.vapiSuccess = true;
+      }
+    } catch (err: any) {
+      console.error('[clone-voice] Error updating VAPI assistant:', err);
+      logs.vapiError = err.message;
+    }
+
     // Session and response
     const sessionCookie = sessionId || Math.random().toString(36).slice(2);
     res.setHeader('Set-Cookie', `voice_session=${sessionCookie}; Path=/; HttpOnly; SameSite=Lax`);

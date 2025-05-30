@@ -1,9 +1,11 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export interface VoiceRecorderProps {
   onRecordingComplete?: (audioBlob: Blob) => void;
   maxDuration?: number; // seconds, default 30
+  onAssistantVoiceUpdated?: () => void;
 }
 
 interface RecordingState {
@@ -17,6 +19,9 @@ interface RecordingState {
   cloneSuccess: boolean;
   cloneError: string | null;
   clonedVoiceId: string | null;
+  isUpdatingAssistant: boolean;
+  updateAssistantSuccess: boolean;
+  updateAssistantError: string | null;
 }
 
 const FRIEND_SCRIPT = `Hey Sarah! It's John from college. How have you been? I was just thinking about that crazy finals week when we pulled all-nighters together in the library. Can't believe that was so long ago! I've been meaning to reach out and catch up. What's new with you? I'd love to hear about everything you've been up to. Are you free for a longer chat this weekend? It would be awesome to properly reconnect!`;
@@ -29,7 +34,10 @@ const READING_TIPS = [
   "Avoid long pauses between sentences."
 ];
 
-const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, maxDuration = 30 }) => {
+const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, maxDuration = 30, onAssistantVoiceUpdated }) => {
+
+  const router = useRouter();
+  
   // Unified state for all recording aspects
   const [state, setState] = useState<RecordingState>({
     isRecording: false,
@@ -42,6 +50,9 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, maxD
     cloneSuccess: false,
     cloneError: null,
     clonedVoiceId: null,
+    isUpdatingAssistant: false,
+    updateAssistantSuccess: false,
+    updateAssistantError: null,
   });
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [permission, setPermission] = useState<'pending' | 'granted' | 'denied'>('pending');
@@ -186,6 +197,79 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, maxD
           <div className="mt-1 text-xs text-red-500 animate-pulse">Recording...</div>
         )}
       </div>
+
+
+
+      {state.cloneSuccess && state.clonedVoiceId && (
+        <div className="mt-2 text-green-600 text-sm text-center">
+          Voice cloned!<br />
+          <span className="font-mono">Voice ID: {state.clonedVoiceId}</span>
+          <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded text-blue-800">
+            <p className="font-semibold">Voice was cloned successfully!</p>
+            <p className="mt-1">Please sync the voice in the Vapi dashboard to use it.</p>
+          </div>
+          <button
+            className={`mt-4 px-4 py-2 text-white rounded transition w-full ${
+              state.isUpdatingAssistant 
+                ? 'bg-gray-500' 
+                : state.updateAssistantSuccess 
+                ? 'bg-green-500 hover:bg-green-600' 
+                : 'bg-purple-600 hover:bg-purple-700'
+            }`}
+            onClick={async () => {
+              if (!state.clonedVoiceId || state.isUpdatingAssistant) return;
+              setState(s => ({ ...s, isUpdatingAssistant: true, updateAssistantError: null }));
+              try {
+                const VAPI_ASSISTANT_ID = 'faf48696-c2f6-4ef8-b140-d9d96cc12719';
+                const response = await fetch('/api/update-assistant-voice', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    assistantId: VAPI_ASSISTANT_ID,
+                    voiceId: state.clonedVoiceId
+                  }),
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                  setState(s => ({ ...s, isUpdatingAssistant: false, updateAssistantSuccess: true }));
+                  // Call the callback to inform parent to move to the next section
+                  if (typeof onAssistantVoiceUpdated === 'function') {
+                    onAssistantVoiceUpdated();
+                  }
+                } else {
+                  setState(s => ({ 
+                    ...s, 
+                    isUpdatingAssistant: false, 
+                    updateAssistantError: data.error || 'Failed to update assistant voice'
+                  }));
+                }
+              } catch (err: any) {
+                setState(s => ({ 
+                  ...s, 
+                  isUpdatingAssistant: false, 
+                  updateAssistantError: err.message || 'Failed to update assistant voice'
+                }));
+              }
+            }}
+            type="button"
+            disabled={state.isUpdatingAssistant || state.updateAssistantSuccess}
+          >
+            {state.isUpdatingAssistant 
+              ? 'Updating assistant voice...' 
+              : state.updateAssistantSuccess 
+              ? 'Updated! Moving to Friend Details...' 
+              : 'Update assistant voice'}
+          </button>
+          {state.updateAssistantError && (
+            <div className="mt-2 text-red-600 text-sm text-center">{state.updateAssistantError}</div>
+          )}
+        </div>
+      )}
+
       {state.audioBlob && audioUrl && !state.isRecording && (
         <div className="flex flex-col items-center gap-2 w-full mt-2">
           <button
@@ -248,6 +332,69 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, maxD
             <div className="mt-2 text-green-600 text-sm text-center">
               Voice cloned!<br />
               <span className="font-mono">Voice ID: {state.clonedVoiceId}</span>
+              <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded text-blue-800">
+                <p className="font-semibold">Voice was cloned successfully!</p>
+                <p className="mt-1">Please sync the voice in the Vapi dashboard to use it.</p>
+              </div>
+              <button
+                className={`mt-4 px-4 py-2 text-white rounded transition w-full ${
+                  state.isUpdatingAssistant 
+                    ? 'bg-gray-500' 
+                    : state.updateAssistantSuccess 
+                    ? 'bg-green-500 hover:bg-green-600' 
+                    : 'bg-purple-600 hover:bg-purple-700'
+                }`}
+                onClick={async () => {
+                  if (!state.clonedVoiceId || state.isUpdatingAssistant) return;
+                  setState(s => ({ ...s, isUpdatingAssistant: true, updateAssistantError: null }));
+                  try {
+                    const VAPI_ASSISTANT_ID = 'faf48696-c2f6-4ef8-b140-d9d96cc12719';
+                    const response = await fetch('/api/update-assistant-voice', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        assistantId: VAPI_ASSISTANT_ID,
+                        voiceId: state.clonedVoiceId
+                      }),
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                      setState(s => ({ ...s, isUpdatingAssistant: false, updateAssistantSuccess: true }));
+                      // Call the callback to inform parent to move to the next section
+                      if (typeof onAssistantVoiceUpdated === 'function') {
+                        onAssistantVoiceUpdated();
+                      }
+                    } else {
+                      setState(s => ({ 
+                        ...s, 
+                        isUpdatingAssistant: false, 
+                        updateAssistantError: data.error || 'Failed to update assistant voice'
+                      }));
+                    }
+                  } catch (err: any) {
+                    setState(s => ({ 
+                      ...s, 
+                      isUpdatingAssistant: false, 
+                      updateAssistantError: err.message || 'Failed to update assistant voice'
+                    }));
+                  }
+                }}
+                type="button"
+                disabled={state.isUpdatingAssistant || state.updateAssistantSuccess}
+              >
+                {state.isUpdatingAssistant 
+                  ? 'Updating assistant voice...' 
+                  : state.updateAssistantSuccess 
+                  ? 'Updated! Redirecting...' 
+                  : 'Update assistant voice'}
+              </button>
+              {state.updateAssistantError && (
+                <div className="mt-2 text-red-600 text-sm text-center">{state.updateAssistantError}</div>
+              )}
             </div>
           )}
           {state.cloneError && (
