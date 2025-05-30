@@ -71,11 +71,13 @@ export default function CallStatus({ callId, friendName = "your friend", onCallC
           error: null,
           pollingActive: !TERMINAL_STATES.includes(uiStatus)
         }));
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching call status:', err);
         setCallState(prev => ({
           ...prev,
-          error: err.message || 'Error fetching call status',
+          error: (err && typeof err === 'object' && 'message' in err)
+            ? (err as { message?: string }).message ?? 'Error fetching call status'
+            : 'Error fetching call status',
           // Keep polling even if there's an error, it might be temporary
         }));
       }
@@ -94,7 +96,7 @@ export default function CallStatus({ callId, friendName = "your friend", onCallC
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [callId, callState.pollingActive, onCallCompleted]);
+  }, [callId, callState.pollingActive, onCallCompleted, TERMINAL_STATES]);
   
   // Reset call state if callId changes
   useEffect(() => {
