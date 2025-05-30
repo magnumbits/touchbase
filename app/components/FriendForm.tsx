@@ -153,7 +153,7 @@ export default function FriendForm({ initialData = {}, onBack, onCallInitiated }
             maxLength={50}
             disabled={loading}
             className={`w-full px-4 py-2 rounded border text-gray-900 placeholder-gray-500 ${errors.friendName ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-orange-400`}
-            placeholder="Enter your friend's name"
+            placeholder="Enter your friend&apos;s name"
             aria-required="true"
           />
           {errors.friendName && touched.friendName && <div className="text-red-500 text-xs mt-1">{errors.friendName}</div>}
