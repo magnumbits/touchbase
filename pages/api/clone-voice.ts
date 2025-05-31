@@ -173,7 +173,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       try {
         // Use axios directly for better error handling
         const formData = new FormData();
-        formData.append('file', fs.createReadStream(tempFilePath));
+        // Type assertion for Node.js ReadStream to work with FormData
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        formData.append('file', fs.createReadStream(tempFilePath) as any);
         formData.append('voice_name', 'User Voice Clone');
         formData.append('description', 'Voice clone for user');
         
