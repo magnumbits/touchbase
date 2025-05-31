@@ -265,8 +265,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Update VAPI assistant with the new voice ID
     const VAPI_ASSISTANT_ID = 'faf48696-c2f6-4ef8-b140-d9d96cc12719';
     try {
-      // Import using ES module syntax instead of require()
-      const { updateAssistantVoice } = await import('../../app/lib/vapi');
+      // Import using ES module syntax with an absolute import path for Next.js
+      const { updateAssistantVoice } = await import('@/app/lib/vapi');
       const vapiResponse = await updateAssistantVoice(VAPI_ASSISTANT_ID, clonedVoice.id);
       
       if (!vapiResponse.success) {
