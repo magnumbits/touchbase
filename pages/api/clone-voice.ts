@@ -81,7 +81,7 @@ export const config = {
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const logs: any = { received: Date.now(), method: req.method };
+  const logs: Record<string, unknown> = { received: Date.now(), method: req.method };
 
   if (req.method !== 'POST') {
     res.status(405).json({ success: false, error: 'Method not allowed' });
@@ -112,7 +112,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       logs.error = 'Form parsing failed';
       logs.details = err.message;
       console.error('[clone-voice]', logs);
-      res.status(400).json({ success: false, error: 'Failed to parse form data', details: err.message });
+      res.status(400).json({ success: false, error: 'Failed to parse form data', details: (err && typeof err === 'object' && 'message' in err) ? String(err.message) : 'Unknown error' });
       return;
     }
     logs.sessionId = sessionId;
@@ -211,29 +211,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         await fs.promises.unlink(tempFilePath).catch(e => 
           console.error('[clone-voice] Failed to delete temp file:', e)
         );
-      } catch (err: any) {
+      } catch (err: unknown) {
         // Clean up temp file on error
         await fs.promises.unlink(tempFilePath).catch(() => {});
         
         // Handle Axios errors
-        if (err.response) {
-          // The request was made and the server responded with a status code outside of 2xx
-          console.error('[clone-voice] PlayHT API error response:', {
-            status: err.response.status,
-            statusText: err.response.statusText,
-            headers: err.response.headers,
-            data: err.response.data
-          });
-          throw new Error(`PlayHT API error: ${err.response.status} - ${JSON.stringify(err.response.data)}`);
-        } else if (err.request) {
-          // The request was made but no response was received
-          console.error('[clone-voice] PlayHT API no response:', err.request);
-          throw new Error(`PlayHT API error: No response received - ${err.message}`);
-        } else {
-          // Something happened in setting up the request
-          console.error('[clone-voice] PlayHT API request setup error:', err.message);
-          throw new Error(`PlayHT API request error: ${err.message}`);
+        if (typeof err === 'object' && err !== null) {
+          // Type guard for Axios error response
+          if ('response' in err && err.response && typeof err.response === 'object') {
+            // The request was made and the server responded with a status code outside of 2xx
+            const axiosErr = err as { 
+              response: { 
+                status?: number; 
+                statusText?: string; 
+                headers?: unknown; 
+                data?: unknown 
+              } 
+            };
+            console.error('[clone-voice] PlayHT API error response:', {
+              status: axiosErr.response.status,
+              statusText: axiosErr.response.statusText,
+              headers: axiosErr.response.headers,
+              data: axiosErr.response.data
+            });
+            throw new Error(`PlayHT API error: ${axiosErr.response.status || 'unknown'} - ${JSON.stringify(axiosErr.response.data || {})}`);
+          } else if ('request' in err && err.request) {
+            // The request was made but no response was received
+            console.error('[clone-voice] PlayHT API no response:', err.request);
+            const message = 'message' in err && typeof err.message === 'string' ? err.message : 'Unknown error';
+            throw new Error(`PlayHT API error: No response received - ${message}`);
+          } else if ('message' in err && typeof err.message === 'string') {
+            // Something happened in setting up the request
+            console.error('[clone-voice] PlayHT API request setup error:', err.message);
+            throw new Error(`PlayHT API request error: ${err.message}`);
+          }
         }
+        // Fallback for any other type of error
+        console.error('[clone-voice] Unknown error type:', err);
+        throw new Error('Unknown PlayHT API error occurred')
       }
       
       // Extract voice ID from response
@@ -247,7 +262,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       logs.error = 'PlayHT API error';
       logs.details = err.message;
       console.error('[clone-voice]', logs);
-      res.status(502).json({ success: false, error: 'Voice cloning failed', details: err.message });
+      res.status(502).json({ success: false, error: 'Voice cloning failed', details: (err && typeof err === 'object' && 'message' in err) ? String(err.message) : 'Unknown error' });
       return;
     }
 
@@ -273,7 +288,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     } catch (err: any) {
       console.error('[clone-voice] Error updating VAPI assistant:', err);
-      logs.vapiError = err.message;
+      logs.vapiError = (err && typeof err === 'object' && 'message' in err) ? String(err.message) : 'Unknown error';
     }
 
     // Session and response
@@ -290,7 +305,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('[clone-voice]', logs);
     res.status(200).json(response);
   } catch (err: any) {
-    console.error('[clone-voice]', { ...logs, error: err.message, stack: err.stack });
-    res.status(500).json({ success: false, error: 'Internal server error', details: err.message });
+    console.error('[clone-voice]', { ...logs, error: (err && typeof err === 'object' && 'message' in err) ? String(err.message) : 'Unknown error', stack: (err && typeof err === 'object' && 'stack' in err) ? String(err.stack) : 'No stack trace' });
+    res.status(500).json({ success: false, error: 'Internal server error', details: (err && typeof err === 'object' && 'message' in err) ? String(err.message) : 'Unknown error' });
   }
 }

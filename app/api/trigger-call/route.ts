@@ -26,17 +26,6 @@ interface VapiRequestPayload {
   };
 }
 
-interface SuccessResponse {
-  success: true;
-  callId: string;
-  message: string;
-}
-
-interface ErrorResponse {
-  success: false;
-  error: string;
-  details?: string;
-}
 
 
 
@@ -50,7 +39,6 @@ function sanitizePhone(phone: string): string {
 }
 
 function log(...args: unknown[]) {
-  // eslint-disable-next-line no-console
   console.log('[API/trigger-call]', ...args);
 }
 

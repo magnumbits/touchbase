@@ -1,9 +1,10 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+// Note: no router needed for this component
 
 export interface VoiceRecorderProps {
-  onRecordingComplete?: (audioBlob: Blob) => void;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onRecordingComplete?: (audioBlob: Blob) => void; // kept for compatibility with wrapper
   maxDuration?: number; // seconds, default 30
   onAssistantVoiceUpdated?: () => void;
   setStep: (step: number) => void;
@@ -35,9 +36,13 @@ const READING_TIPS = [
   "Avoid long pauses between sentences."
 ];
 
-const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, maxDuration = 30, onAssistantVoiceUpdated, setStep }) => {
-
-  const router = useRouter();
+const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onRecordingComplete, 
+  maxDuration = 30, 
+  onAssistantVoiceUpdated, 
+  setStep 
+}) => {
   
   // Unified state for all recording aspects
   const [state, setState] = useState<RecordingState>({
@@ -152,7 +157,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, maxD
     return () => {
       if (interval) clearInterval(interval);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  
   }, [state.isRecording, timeLeft]);
 
   // Re-record
@@ -267,11 +272,14 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, maxD
                     updateAssistantError: data.error || 'Failed to update assistant voice'
                   }));
                 }
-              } catch (err: any) {
-                setState(s => ({ 
-                  ...s, 
-                  isUpdatingAssistant: false, 
-                  updateAssistantError: err.message || 'Failed to update assistant voice'
+              } catch (err: unknown) {
+                console.error('Error updating assistant voice:', err);
+                setState(s => ({
+                  ...s,
+                  isUpdatingAssistant: false,
+                  updateAssistantError: (err && typeof err === 'object' && 'message' in err)
+                    ? (err as { message?: string }).message ?? 'Error updating assistant voice'
+                    : 'Error updating assistant voice'
                 }));
               }
             }}
@@ -339,8 +347,15 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, maxD
                 } else {
                   setState(s => ({ ...s, isCloning: false, cloneError: data.error || 'Voice cloning failed', cloneSuccess: false }));
                 }
-              } catch (err: any) {
-                setState(s => ({ ...s, isCloning: false, cloneError: err.message || 'Voice cloning failed', cloneSuccess: false }));
+              } catch (err: unknown) {
+                console.error('Error during voice cloning:', err);
+                setState(s => ({
+                  ...s,
+                  isCloning: false,
+                  cloneError: (err && typeof err === 'object' && 'message' in err) 
+                    ? (err as { message?: string }).message ?? 'Error during voice cloning' 
+                    : 'Error during voice cloning'
+                }));
               }
             }}
             type="button"

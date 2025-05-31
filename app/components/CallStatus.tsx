@@ -27,7 +27,7 @@ export default function CallStatus({ callId, friendName = "your friend", onCallC
   // Polling interval in milliseconds
   const POLLING_INTERVAL = 3000;
   // Terminal states that should stop polling
-  const TERMINAL_STATES = ['completed', 'failed'];
+  const TERMINAL_STATES = React.useMemo(() => ['completed', 'failed'], []);
   
   useEffect(() => {
     let intervalId: NodeJS.Timeout;

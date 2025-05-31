@@ -143,7 +143,7 @@ export default function FriendForm({ initialData = {}, onBack, onCallInitiated }
           {errors.userName && touched.userName && <div className="text-red-500 text-xs mt-1">{errors.userName}</div>}
         </div>
         <div>
-          <label className="block text-sm font-semibold mb-1 text-gray-700">Friend's Name<span className="text-red-500">*</span></label>
+          <label className="block text-sm font-semibold mb-1 text-gray-700">Friend&apos;s Name<span className="text-red-500">*</span></label>
           <input
             name="friendName"
             value={form.friendName}

@@ -6,7 +6,7 @@ const VAPI_BASE_URL = 'https://api.vapi.ai';
 interface VapiResponse {
   success: boolean;
   error?: string;
-  data?: any;
+  data?: unknown;
 }
 
 // Update assistant's voice ID
@@ -43,11 +43,13 @@ export async function updateAssistantVoice(assistantId: string, voiceId: string)
       success: true,
       data
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[VAPI] Error updating assistant:', error);
     return {
       success: false,
-      error: error.message || 'Failed to update assistant voice'
+      error: (error && typeof error === 'object' && 'message' in error)
+        ? String((error as { message: unknown }).message) || 'Failed to update assistant voice'
+        : 'Failed to update assistant voice'
     };
   }
 }
@@ -84,11 +86,13 @@ export async function triggerCall(phoneNumber: string, assistantId: string) {
       success: true,
       data
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[VAPI] Error triggering call:', error);
     return {
       success: false,
-      error: error.message || 'Failed to trigger call'
+      error: (error && typeof error === 'object' && 'message' in error)
+        ? String((error as { message: unknown }).message) || 'Failed to trigger call'
+        : 'Failed to trigger call'
     };
   }
 }
