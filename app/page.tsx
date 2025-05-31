@@ -11,8 +11,9 @@ import type { FriendData } from "../types";
 
 export default function Home() {
   const [step, setStep] = useState(0);
-  // audioBlob is used by components rendered conditionally
-  const [_, setAudioBlob] = useState<Blob | null>(null);
+  // Only using the setter, not the value
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [friendData, setFriendData] = useState<FriendData | null>(null);
   const [callId, setCallId] = useState<string | null>(null);
   const [callSummary, setCallSummary] = useState<string>("");
