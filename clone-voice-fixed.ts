@@ -108,11 +108,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let sessionId: string | undefined = undefined;
     try {
       ({ audioFile, sessionId } = await parseFormidable(req));
-    } catch (err: unknown) {
+    } catch (err: any) {
       logs.error = 'Form parsing failed';
-      logs.details = err instanceof Error ? err.message : 'Unknown error';
+      logs.details = err.message;
       console.error('[clone-voice]', logs);
-      res.status(400).json({ success: false, error: 'Failed to parse form data', details: err instanceof Error ? err.message : 'Unknown error' });
+      res.status(400).json({ success: false, error: 'Failed to parse form data', details: err instanceof Error ? String(err.message) : 'Unknown error' });
       return;
     }
     logs.sessionId = sessionId;
@@ -122,67 +122,80 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       res.status(400).json({ success: false, error: 'No audio file uploaded.' });
       return;
     }
+    console.log('[clone-voice] Uploaded mimetype:', audioFile.mimetype);
+    if (!SUPPORTED_FORMATS.includes(audioFile.mimetype || '')) {
+      logs.error = `Unsupported audio format: ${audioFile.mimetype}`;
+      console.error('[clone-voice]', logs);
+      res.status(400).json({ success: false, error: `Unsupported audio format (${audioFile.mimetype}). Please upload a .webm, .mp3, or .wav file.` });
+      return;
+    }
+    if (audioFile.size > MAX_AUDIO_SIZE) {
+      logs.error = `Audio file too large: ${audioFile.size}`;
+      console.error('[clone-voice]', logs);
+      res.status(400).json({ success: false, error: 'Audio file too large. Please keep recordings under 30 seconds.' });
+      return;
+    }
 
-    // Validate audio file size
-    const fileStats = fs.statSync(audioFile.filepath);
-    logs.fileSize = fileStats.size;
-    if (fileStats.size === 0) {
-      logs.error = 'Empty file uploaded';
-      console.error('[clone-voice]', logs);
-      res.status(400).json({ success: false, error: 'Audio file is empty.', details: null });
-      return;
-    }
-    if (fileStats.size > MAX_AUDIO_SIZE) {
-      logs.error = 'File too large';
-      console.error('[clone-voice]', logs);
-      res.status(400).json({ success: false, error: 'Audio file too large. Maximum size is 5MB.', details: null });
-      return;
-    }
-    
-    // Need to clone the voice using PlayHT API
-    let clonedVoice: { id: string } | null = null;
+    // Read audio file buffer
+    let fileBuffer: Buffer;
     try {
-      // Initialize PlayHT with API credentials
-      PlayHT.init({
-        apiKey: apiKey as string,
-        userId: userId as string,
-      });
+      fileBuffer = await fs.promises.readFile(audioFile.filepath);
+    } catch (err: any) {
+      logs.error = 'Failed to read audio file buffer';
+      logs.details = err.message;
+      console.error('[clone-voice]', logs);
+      res.status(400).json({ success: false, error: 'Failed to process audio file', details: err.message });
+      return;
+    }
 
-      // Validate audio file mime type
-      if (!audioFile.mimetype || !SUPPORTED_FORMATS.includes(audioFile.mimetype)) {
-        throw new Error(`Unsupported audio format: ${audioFile.mimetype || 'unknown'}. Supported formats: ${SUPPORTED_FORMATS.join(', ')}`);
-      }
+    // Initialize PlayHT
+    try {
+      PlayHT.init({ apiKey, userId });
+    } catch (err: any) {
+      logs.error = 'Failed to initialize PlayHT';
+      logs.details = err.message;
+      console.error('[clone-voice]', logs);
+      res.status(500).json({ success: false, error: 'Voice cloning service unavailable', details: err.message });
+      return;
+    }
 
-      // Copy audio to a temp file with correct extension
-      const fileExt = audioFile.mimetype === 'audio/webm' ? 'webm' : 'mp3';
-      const tempFilePath = `/tmp/recording-${Date.now()}.${fileExt}`;
+    // Use PlayHT API directly as per documentation
+    let clonedVoice: any;
+    let responseData: any;
+    try {
+      console.log('[clone-voice] Using direct PlayHT API with multipart/form-data...');
+
+      // Create a FormData instance using the form-data package (already compatible with Node.js)
+      const FormData = require('form-data');
+      const form = new FormData();
+      
+      // Create a temporary file path for the audio
+      const tempFilePath = `${audioFile.filepath}.wav`;
+      
+      // Write the buffer to the temp file
+      await fs.promises.writeFile(tempFilePath, fileBuffer);
+      
       try {
-        fs.copyFileSync(audioFile.filepath, tempFilePath);
-        console.log('[clone-voice] Copied audio file to temp path:', tempFilePath);
-      } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown file copy error';
-        logs.error = 'Failed to copy audio file';
-        logs.details = errorMessage;
-        console.error('[clone-voice]', logs);
-        throw new Error(`Failed to copy audio file: ${errorMessage}`);
-      }
-
-      // Submit to PlayHT
-      console.log('[clone-voice] Creating voice clone with PlayHT...');
-      let responseData;
-      try {
-        // Use axios directly for better error handling
-        const formData = new FormData();
-        formData.append('file', fs.createReadStream(tempFilePath));
-        formData.append('voice_name', 'User Voice Clone');
-        formData.append('description', 'Voice clone for user');
+        // Append the temporary file to the form data
+        // This ensures Axios can properly handle the file upload with the correct content type
+        form.append('sample_file', fs.createReadStream(tempFilePath));
+        form.append('voice_name', 'user-voice-clone');
+        form.append('gender', 'male');
         
-        const response = await axios.post('https://api.play.ht/api/v2/cloned-voices/instant', formData, {
+        // API endpoint for instant voice cloning
+        const apiUrl = 'https://api.play.ht/api/v2/cloned-voices/instant/';
+        console.log('[clone-voice] Sending request to PlayHT API with Axios:', apiUrl);
+        
+        // Use Axios for the request - it handles multipart/form-data correctly
+        const response = await axios.post(apiUrl, form, {
           headers: {
+            ...form.getHeaders(), // This is critical - it sets the correct Content-Type with boundary
             'Authorization': `Bearer ${apiKey}`,
-            'X-USER-ID': userId,
-            'accept': 'application/json',
+            'X-User-ID': userId,
           },
+          // Add timeout and other options
+          timeout: 60000, // 60 seconds timeout
+          maxContentLength: Infinity,
           maxBodyLength: Infinity,
         });
         
@@ -235,7 +248,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         // Fallback for any other type of error
         console.error('[clone-voice] Unknown error type:', err);
-        throw new Error('Unknown PlayHT API error occurred');
+        throw new Error('Unknown PlayHT API error occurred')
       }
       
       // Extract voice ID from response
@@ -245,11 +258,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       
       clonedVoice = { id: responseData.id };
       console.log('[clone-voice] Success! Voice cloned with ID:', clonedVoice.id);
-    } catch (err: unknown) {
+    } catch (err: any) {
       logs.error = 'PlayHT API error';
-      logs.details = err instanceof Error ? err.message : 'Unknown error';
+      logs.details = err.message;
       console.error('[clone-voice]', logs);
-      res.status(502).json({ success: false, error: 'Voice cloning failed', details: err instanceof Error ? err.message : 'Unknown error' });
+      res.status(502).json({ success: false, error: 'Voice cloning failed', details: (err && typeof err === 'object' && 'message' in err) ? String(err.message) : 'Unknown error' });
       return;
     }
 
@@ -263,7 +276,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Update VAPI assistant with the new voice ID
     const VAPI_ASSISTANT_ID = 'faf48696-c2f6-4ef8-b140-d9d96cc12719';
     try {
-      // Import using ES module syntax instead of require()
+      // Use import() instead of require()
       const { updateAssistantVoice } = await import('../../app/lib/vapi');
       const vapiResponse = await updateAssistantVoice(VAPI_ASSISTANT_ID, clonedVoice.id);
       
@@ -274,9 +287,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log('[clone-voice] Successfully updated VAPI assistant');
         logs.vapiSuccess = true;
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error('[clone-voice] Error updating VAPI assistant:', err);
-      logs.vapiError = err instanceof Error ? err.message : 'Unknown error';
+      logs.vapiError = (err && typeof err === 'object' && 'message' in err) ? String(err.message) : 'Unknown error';
     }
 
     // Session and response
@@ -292,16 +305,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     logs.voiceId = clonedVoice.id;
     console.log('[clone-voice]', logs);
     res.status(200).json(response);
-  } catch (err: unknown) {
-    console.error('[clone-voice]', { 
-      ...logs, 
-      error: err instanceof Error ? err.message : 'Unknown error', 
-      stack: err instanceof Error ? err.stack : 'No stack trace'
-    });
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error', 
-      details: err instanceof Error ? err.message : 'Unknown error' 
-    });
+  } catch (err: any) {
+    console.error('[clone-voice]', { ...logs, error: (err && typeof err === 'object' && 'message' in err) ? String(err.message) : 'Unknown error', stack: (err && typeof err === 'object' && 'stack' in err) ? String(err.stack) : 'No stack trace' });
+    res.status(500).json({ success: false, error: 'Internal server error', details: (err && typeof err === 'object' && 'message' in err) ? String(err.message) : 'Unknown error' });
   }
 }

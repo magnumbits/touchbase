@@ -11,11 +11,11 @@ import type { FriendData } from "../types";
 
 export default function Home() {
   const [step, setStep] = useState(0);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  // audioBlob is used by components rendered conditionally
+  const [_, setAudioBlob] = useState<Blob | null>(null);
   const [friendData, setFriendData] = useState<FriendData | null>(null);
   const [callId, setCallId] = useState<string | null>(null);
   const [callSummary, setCallSummary] = useState<string>("");
-  const [loading, setLoading] = useState(false);
 
   // Handle call completion - update state and move to results step
   const handleCallCompleted = (summary: string) => {

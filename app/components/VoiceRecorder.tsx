@@ -3,8 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 // Note: no router needed for this component
 
 export interface VoiceRecorderProps {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  onRecordingComplete?: (audioBlob: Blob) => void; // kept for compatibility with wrapper
+  onRecordingComplete?: (audioBlob: Blob) => void; // used by wrapper
   maxDuration?: number; // seconds, default 30
   onAssistantVoiceUpdated?: () => void;
   setStep: (step: number) => void;
@@ -410,11 +409,13 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
                         updateAssistantError: data.error || 'Failed to update assistant voice'
                       }));
                     }
-                  } catch (err: any) {
+                  } catch (err: unknown) {
                     setState(s => ({ 
                       ...s, 
                       isUpdatingAssistant: false, 
-                      updateAssistantError: err.message || 'Failed to update assistant voice'
+                      updateAssistantError: (err && typeof err === 'object' && 'message' in err) 
+                        ? String((err as { message: unknown }).message) || 'Failed to update assistant voice'
+                        : 'Failed to update assistant voice'
                     }));
                   }
                 }}
