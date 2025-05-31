@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import fs from 'fs';
 import formidable, { File as FormidableFile } from 'formidable';
 import axios from 'axios';
+import FormData from 'form-data';
 // Define types locally to avoid import errors
 interface VoiceCloneResponse {
   success: boolean;
@@ -142,7 +143,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Need to clone the voice using PlayHT API
     let clonedVoice: { id: string } | null = null;
     try {
-      // Initialize PlayHT with API credentials
+      // Initialize PlayHT with API credentials (can be kept if other SDK functions are used, otherwise optional)
       PlayHT.init({
         apiKey: apiKey as string,
         userId: userId as string,
@@ -150,103 +151,68 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // Validate audio file mime type
       if (!audioFile.mimetype || !SUPPORTED_FORMATS.includes(audioFile.mimetype)) {
-        throw new Error(`Unsupported audio format: ${audioFile.mimetype || 'unknown'}. Supported formats: ${SUPPORTED_FORMATS.join(', ')}`);
-      }
-
-      // Copy audio to a temp file with correct extension
-      const fileExt = audioFile.mimetype === 'audio/webm' ? 'webm' : 'mp3';
-      const tempFilePath = `/tmp/recording-${Date.now()}.${fileExt}`;
-      try {
-        fs.copyFileSync(audioFile.filepath, tempFilePath);
-        console.log('[clone-voice] Copied audio file to temp path:', tempFilePath);
-      } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown file copy error';
-        logs.error = 'Failed to copy audio file';
-        logs.details = errorMessage;
+        logs.error = 'Unsupported audio format';
+        logs.details = `Format: ${audioFile.mimetype || 'unknown'}. Supported: ${SUPPORTED_FORMATS.join(', ')}`;
         console.error('[clone-voice]', logs);
-        throw new Error(`Failed to copy audio file: ${errorMessage}`);
+        // It's better to throw and let the outer catch handle the response for consistency
+        throw new Error(`Unsupported audio format: ${audioFile.mimetype || 'unknown'}`);
       }
 
-      // Submit to PlayHT
-      console.log('[clone-voice] Creating voice clone with PlayHT...');
-      let responseData;
+      console.log('[clone-voice] Creating voice clone with PlayHT via direct API call...');
+      const playHTFormData = new FormData();
+      playHTFormData.append('sample_file', fs.createReadStream(audioFile.filepath), {
+        filename: audioFile.originalFilename || `recording-${Date.now()}.${audioFile.mimetype?.split('/')[1] || 'webm'}`,
+        contentType: audioFile.mimetype || 'audio/webm',
+      });
+      playHTFormData.append('voice_name', 'User Voice Clone ' + Date.now()); // Add timestamp for unique voice name
+
+      const playHTApiUrl = 'https://api.play.ht/api/v2/cloned-voices/instant';
+      const playHTConfig = {
+        headers: {
+          'AUTHORIZATION': apiKey, // PlayHT uses the API key directly for this endpoint
+          'X-USER-ID': userId,
+          ...playHTFormData.getHeaders(), // This sets 'Content-Type': 'multipart/form-data; boundary=...'
+        },
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
+      };
+
+      let responseDataFromPlayHT;
       try {
-        // Use axios directly for better error handling
-        const formData = new FormData();
-        // Type assertion for Node.js ReadStream to work with FormData
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        formData.append('file', fs.createReadStream(tempFilePath) as any);
-        formData.append('voice_name', 'User Voice Clone');
-        formData.append('description', 'Voice clone for user');
-        
-        const response = await axios.post('https://api.play.ht/api/v2/cloned-voices/instant', formData, {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'X-USER-ID': userId,
-            'accept': 'application/json',
-          },
-          maxBodyLength: Infinity,
-        });
-        
-        // Log the successful response
-        console.log('[clone-voice] PlayHT API success response status:', response.status);
-        console.log('[clone-voice] PlayHT API success response headers:', response.headers);
-        
-        // Parse successful response
-        responseData = response.data;
-        console.log('[clone-voice] PlayHT API success response data:', responseData);
-        
-        // Clean up the temporary file
-        await fs.promises.unlink(tempFilePath).catch(e => 
-          console.error('[clone-voice] Failed to delete temp file:', e)
-        );
-      } catch (err: unknown) {
-        // Clean up temp file on error
-        await fs.promises.unlink(tempFilePath).catch(() => {});
-        
-        // Handle Axios errors
-        if (typeof err === 'object' && err !== null) {
-          // Type guard for Axios error response
-          if ('response' in err && err.response && typeof err.response === 'object') {
-            // The request was made and the server responded with a status code outside of 2xx
-            const axiosErr = err as { 
-              response: { 
-                status?: number; 
-                statusText?: string; 
-                headers?: unknown; 
-                data?: unknown 
-              } 
-            };
-            console.error('[clone-voice] PlayHT API error response:', {
-              status: axiosErr.response.status,
-              statusText: axiosErr.response.statusText,
-              headers: axiosErr.response.headers,
-              data: axiosErr.response.data
-            });
-            throw new Error(`PlayHT API error: ${axiosErr.response.status || 'unknown'} - ${JSON.stringify(axiosErr.response.data || {})}`);
-          } else if ('request' in err && err.request) {
-            // The request was made but no response was received
-            console.error('[clone-voice] PlayHT API no response:', err.request);
-            const message = 'message' in err && typeof err.message === 'string' ? err.message : 'Unknown error';
-            throw new Error(`PlayHT API error: No response received - ${message}`);
-          } else if ('message' in err && typeof err.message === 'string') {
-            // Something happened in setting up the request
-            console.error('[clone-voice] PlayHT API request setup error:', err.message);
-            throw new Error(`PlayHT API request error: ${err.message}`);
-          }
+        console.log(`[clone-voice] Posting to PlayHT: ${playHTApiUrl}`);
+        const response = await axios.post(playHTApiUrl, playHTFormData, playHTConfig);
+        responseDataFromPlayHT = response.data;
+        console.log('[clone-voice] PlayHT API success response data:', responseDataFromPlayHT);
+      } catch (axiosError: unknown) {
+        // Handle Axios-specific errors for PlayHT call
+        if (axios.isAxiosError(axiosError) && axiosError.response) {
+          console.error('[clone-voice] PlayHT API error response:', {
+            status: axiosError.response.status,
+            statusText: axiosError.response.statusText,
+            headers: axiosError.response.headers,
+            data: axiosError.response.data,
+          });
+          logs.playHTErrorDetails = axiosError.response.data;
+          throw new Error(`PlayHT API request failed: ${axiosError.response.status} - ${JSON.stringify(axiosError.response.data)}`);
+        } else if (axios.isAxiosError(axiosError) && axiosError.request) {
+          console.error('[clone-voice] PlayHT API no response:', axiosError.request);
+          throw new Error('PlayHT API request made but no response received.');
+        } else {
+          console.error('[clone-voice] PlayHT API request setup error or unknown error:', axiosError);
+          const message = axiosError instanceof Error ? axiosError.message : 'Unknown error during PlayHT API call';
+          throw new Error(`PlayHT API request error: ${message}`);
         }
-        // Fallback for any other type of error
-        console.error('[clone-voice] Unknown error type:', err);
-        throw new Error('Unknown PlayHT API error occurred');
+      }
+
+      if (!responseDataFromPlayHT || !responseDataFromPlayHT.id) {
+        console.error('[clone-voice] No voice ID returned from PlayHT API. Response:', responseDataFromPlayHT);
+        throw new Error('No voice ID in PlayHT API response. Data: ' + JSON.stringify(responseDataFromPlayHT));
       }
       
-      // Extract voice ID from response
-      if (!responseData.id) {
-        throw new Error('No voice ID returned from PlayHT API');
-      }
-      
-      clonedVoice = { id: responseData.id };
+      clonedVoice = { id: responseDataFromPlayHT.id };
       console.log('[clone-voice] Success! Voice cloned with ID:', clonedVoice.id);
+
+
     } catch (err: unknown) {
       logs.error = 'PlayHT API error';
       logs.details = err instanceof Error ? err.message : 'Unknown error';
@@ -260,25 +226,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error('[clone-voice]', logs);
       res.status(500).json({ success: false, error: 'Voice cloning failed', details: 'No voice ID returned from PlayHT' });
       return;
-    }
-
-    // Update VAPI assistant with the new voice ID
-    const VAPI_ASSISTANT_ID = 'faf48696-c2f6-4ef8-b140-d9d96cc12719';
-    try {
-      // Import using ES module syntax with an absolute import path for Next.js
-      const { updateAssistantVoice } = await import('@/app/lib/vapi');
-      const vapiResponse = await updateAssistantVoice(VAPI_ASSISTANT_ID, clonedVoice.id);
-      
-      if (!vapiResponse.success) {
-        console.error('[clone-voice] Failed to update VAPI assistant:', vapiResponse.error);
-        logs.vapiError = vapiResponse.error;
-      } else {
-        console.log('[clone-voice] Successfully updated VAPI assistant');
-        logs.vapiSuccess = true;
-      }
-    } catch (err: unknown) {
-      console.error('[clone-voice] Error updating VAPI assistant:', err);
-      logs.vapiError = err instanceof Error ? err.message : 'Unknown error';
     }
 
     // Session and response
